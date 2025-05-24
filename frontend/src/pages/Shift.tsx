@@ -218,8 +218,8 @@ const Shift: React.FC = () => {
           <Col xs={24} sm={12} md={8} key={idx}>
             <Card
               title={`Shift #${shiftHistory.length - idx}`}
-              style={{ minHeight: 220, display: "flex", flexDirection: "column" }}
-              bodyStyle={{ display: "flex", flexDirection: "column", height: 160, padding: 12 }}
+              style={{ minHeight: 280, display: "flex", flexDirection: "column" }}
+              bodyStyle={{ display: "flex", flexDirection: "column", height: 220, padding: 12 }}
             >
               <Typography.Text>
                 Duration: {Math.round(shift.shiftDuration / 60)} min
@@ -230,11 +230,11 @@ const Shift: React.FC = () => {
               </Typography.Text>
               <br />
               <Typography.Text>
-                Start: {new Date(shift.startTime).toLocaleTimeString()}
+                Start: {new Date(shift.startTime).toLocaleString()}
               </Typography.Text>
               <br />
               <Typography.Text>
-                End: {new Date(shift.endTime).toLocaleTimeString()}
+                End: {new Date(shift.endTime).toLocaleString()}
               </Typography.Text>
               <div
                 style={{
@@ -272,7 +272,7 @@ const Shift: React.FC = () => {
 
   // Start shift card (second row)
   const renderStartShift = () => (
-    <Row justify="center">
+    <Row justify="start">
       <Col xs={24} sm={18} md={12}>
         <Card>
           <Space direction="vertical" style={{ width: "100%" }}>
@@ -337,6 +337,18 @@ const Shift: React.FC = () => {
             <Typography.Text strong>
               Total Orders: {orders.length}
             </Typography.Text>
+            {startTime && (
+              <Typography.Text>
+                <br />
+                Start: {new Date(startTime).toLocaleString()}
+              </Typography.Text>
+            )}
+            {endTime && (
+              <Typography.Text>
+                <br />
+                End: {new Date(endTime).toLocaleString()}
+              </Typography.Text>
+            )}
             {saveResult && (
               <Alert
                 message={saveResult}
