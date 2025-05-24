@@ -1,60 +1,85 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Layout, Typography, Space, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import React from "react";
+import { Layout, Menu, Typography } from "antd";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import Shift from "./Shift";
+import Stats from "./Stats";
+import Store from "./Store";
+import Settings from "./Settings";
 
-interface Item {
-  name: string;
-  value: number;
-}
-
-const { Header, Content } = Layout;
+const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
-const columns: ColumnsType<Item> = [
-  { title: 'Name', dataIndex: 'name', key: 'name' },
-  { title: 'Value', dataIndex: 'value', key: 'value' },
+const navItems = [
+  {
+    key: "/shift",
+    label: "Shift",
+    icon: <span role="img" aria-label="Shift">🍳</span>,
+  },
+  {
+    key: "/stats",
+    label: "Stats",
+    icon: <span role="img" aria-label="Stats">📊</span>,
+  },
+  {
+    key: "/store",
+    label: "Store",
+    icon: <span role="img" aria-label="Store">🛒</span>,
+  },
+  {
+    key: "/settings",
+    label: "Settings",
+    icon: <span role="img" aria-label="Settings">⚙️</span>,
+  },
 ];
 
-const App: React.FC = () => {
-  const [items, setItems] = useState<Item[]>([]);
-
-  useEffect(() => {
-    fetch('/items')
-      .then((res) => res.json())
-      .then((data: Item[]) => setItems(data))
-      .catch((err) => {
-        console.error(err);
-        message.error('Failed to load items');
-      });
-  }, []);
+const AppLayout: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header>
-        <Title style={{ color: '#fff', margin: 0 }} level={2}>
-          Doughjo Dashboard
-        </Title>
-      </Header>
-      <Content style={{ padding: '24px' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Button
-            type="primary"
-            onClick={() => message.info('This is an Ant Design button!')}
-          >
-            Click Me
-          </Button>
-
-          <Table<Item>
-            dataSource={items}
-            columns={columns}
-            rowKey={(record) => record.name}
-            pagination={false}
-            locale={{ emptyText: 'No items found' }}
-          />
-        </Space>
-      </Content>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider width={200} style={{ background: "#fff" }}>
+        <div style={{ height: 32, margin: 16, textAlign: "center", fontWeight: "bold" }}>
+          Doughjo
+        </div>
+        <Menu
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          style={{ height: "100%", borderRight: 0 }}
+          onClick={({ key }) => navigate(key)}
+          items={navItems}
+        />
+      </Sider>
+      <Layout>
+        <Header style={{ background: "#001529", padding: "0 24px" }}>
+          <Title style={{ color: "#fff", margin: 0 }} level={2}>
+            Doughjo Dashboard
+          </Title>
+        </Header>
+        <Content style={{ margin: "24px 16px 0", padding: 24, background: "#fff" }}>
+          <Routes>
+            <Route path="/shift" element={<Shift />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Shift />} />
+          </Routes>
+        </Content>
+      </Layout>
     </Layout>
   );
 };
+
+const App: React.FC = () => (
+  <Router>
+    <AppLayout />
+  </Router>
+);
 
 export default App;
