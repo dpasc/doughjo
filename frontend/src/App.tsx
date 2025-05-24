@@ -1,5 +1,5 @@
 import React from "react";
-import { Layout, Menu, Typography } from "antd";
+import { Layout, Menu } from "antd";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,8 +12,8 @@ import Stats from "./pages/Stats";
 import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 
-const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Sider, Content } = Layout;
+
 
 const navItems = [
   {
@@ -22,14 +22,14 @@ const navItems = [
     icon: <span role="img" aria-label="Shift">🍩</span>,
   },
   {
-    key: "/stats",
-    label: "Stats",
-    icon: <span role="img" aria-label="Stats">📊</span>,
-  },
-  {
     key: "/store",
     label: "Store",
     icon: <span role="img" aria-label="Store">🛒</span>,
+  },
+  {
+    key: "/stats",
+    label: "Stats",
+    icon: <span role="img" aria-label="Stats">📊</span>,
   },
   {
     key: "/settings",
@@ -57,11 +57,6 @@ const AppLayout: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ background: "#001529", padding: "0 24px" }}>
-          <Title style={{ color: "#fff", margin: 0 }} level={2}>
-            Doughjo Dashboard
-          </Title>
-        </Header>
         <Content style={{ margin: "24px 16px 0", padding: 24, background: "#fff" }}>
           <Routes>
             <Route path="/shift" element={<Shift />} />
