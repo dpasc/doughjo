@@ -4,13 +4,13 @@ from pymongo import MongoClient
 
 from settings_controller import settings_bp
 from shift_controller import shift_bp
-from shop_controller import shop_bp
+from store_controller import store_bp
 
 app = Flask(__name__)
 
 app.register_blueprint(settings_bp)
 app.register_blueprint(shift_bp)
-app.register_blueprint(shop_bp)
+app.register_blueprint(store_bp)
 
 # Connect to MongoDB
 mongo_uri = os.environ['MONGO_URI']
