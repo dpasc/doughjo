@@ -1,10 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
-import { InputNumber, Button, List, Typography, Card, Space, Alert } from "antd";
+import {
+  InputNumber,
+  Button,
+  List,
+  Typography,
+  Card,
+  Space,
+  Alert,
+  Row,
+  Col,
+  Spin,
+} from "antd";
 
 type Order = {
   id: number;
   timestamp: number;
-  items: string[]; // Placeholder for now
+  items: string[];
+};
+
+type ShiftHistory = {
+  shiftDuration: number;
+  orders: Order[];
+  startTime: number;
+  endTime: number;
 };
 
 enum ShiftStatus {
@@ -17,10 +35,11 @@ const getRandomDelay = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
 const Shift: React.FC = () => {
-  const [shiftDuration, setShiftDuration] = useState<number>(60); // seconds
-  const [inputValue, setInputValue] = useState<string>("60");
+  // Shift state
+  const [shiftDuration, setShiftDuration] = useState<number>(1); // minutes
+  const [inputValue, setInputValue] = useState<string>("1");
   const [status, setStatus] = useState<ShiftStatus>(ShiftStatus.NotStarted);
-  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number>(60); // seconds
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderId, setOrderId] = useState<number>(1);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -29,12 +48,37 @@ const Shift: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const orderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Shift history state
+  const [shiftHistory, setShiftHistory] = useState<ShiftHistory[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+
+  // Fetch last 3 shifts when in NotStarted state
+  useEffect(() => {
+    if (status !== ShiftStatus.NotStarted) return;
+    setLoadingHistory(true);
+    fetch("/shift/history")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.shifts)) {
+          // Get last 3 shifts, most recent first
+          setShiftHistory(
+            data.shifts.slice(-3).reverse()
+          );
+        } else {
+          setShiftHistory([]);
+        }
+      })
+      .catch(() => setShiftHistory([]))
+      .finally(() => setLoadingHistory(false));
+  }, [status]);
+
   // Start shift
   const handleStartShift = () => {
-    const duration = parseInt(inputValue, 10);
-    if (isNaN(duration) || duration <= 0) return;
-    setShiftDuration(duration);
-    setTimeLeft(duration);
+    const durationMinutes = parseInt(inputValue, 10);
+    if (isNaN(durationMinutes) || durationMinutes <= 0) return;
+    const durationSeconds = durationMinutes * 60;
+    setShiftDuration(durationMinutes);
+    setTimeLeft(durationSeconds);
     setOrders([]);
     setOrderId(1);
     setStartTime(Date.now());
@@ -105,7 +149,7 @@ const Shift: React.FC = () => {
       // Only send if we have start and end times
       if (startTime && endTime) {
         const payload = {
-          shiftDuration,
+          shiftDuration: shiftDuration * 60, // send as seconds
           orders,
           startTime,
           endTime,
@@ -125,7 +169,7 @@ const Shift: React.FC = () => {
             }
             return res.json();
           })
-          .then((data) => {
+          .then(() => {
             setSaveResult("Shift saved successfully!");
           })
           .catch((err) => {
@@ -136,11 +180,11 @@ const Shift: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, startTime, endTime]);
 
-  // Reset to initial state after shift ends
+  // Reset to initial state after shift ends or return to main
   const handleReset = () => {
     setStatus(ShiftStatus.NotStarted);
-    setInputValue("60");
-    setShiftDuration(60);
+    setInputValue("1");
+    setShiftDuration(1);
     setTimeLeft(60);
     setOrders([]);
     setOrderId(1);
@@ -149,13 +193,91 @@ const Shift: React.FC = () => {
     setSaveResult(null);
   };
 
-  return (
-    <div style={{ maxWidth: 400, margin: "0 auto", padding: 24 }}>
-      {status === ShiftStatus.NotStarted && (
+  // Format time as mm:ss
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // --- UI ---
+
+  // Shift history cards (top row)
+  const renderShiftHistory = () => (
+    <Row gutter={16} style={{ marginBottom: 24 }}>
+      {loadingHistory ? (
+        <Col span={24} style={{ textAlign: "center" }}>
+          <Spin />
+        </Col>
+      ) : shiftHistory.length === 0 ? (
+        <Col span={24} style={{ textAlign: "center" }}>
+          <Typography.Text type="secondary">No previous shifts.</Typography.Text>
+        </Col>
+      ) : (
+        shiftHistory.map((shift, idx) => (
+          <Col xs={24} sm={12} md={8} key={idx}>
+            <Card
+              title={`Shift #${shiftHistory.length - idx}`}
+              style={{ minHeight: 220, display: "flex", flexDirection: "column" }}
+              bodyStyle={{ display: "flex", flexDirection: "column", height: 160, padding: 12 }}
+            >
+              <Typography.Text>
+                Duration: {Math.round(shift.shiftDuration / 60)} min
+              </Typography.Text>
+              <br />
+              <Typography.Text>
+                Orders: {shift.orders.length}
+              </Typography.Text>
+              <br />
+              <Typography.Text>
+                Start: {new Date(shift.startTime).toLocaleTimeString()}
+              </Typography.Text>
+              <br />
+              <Typography.Text>
+                End: {new Date(shift.endTime).toLocaleTimeString()}
+              </Typography.Text>
+              <div
+                style={{
+                  flex: 1,
+                  marginTop: 8,
+                  overflowY: "auto",
+                  border: "1px solid #f0f0f0",
+                  borderRadius: 4,
+                  padding: 4,
+                  background: "#fafafa",
+                }}
+              >
+                <Typography.Text strong>Orders:</Typography.Text>
+                {shift.orders.length === 0 ? (
+                  <Typography.Text type="secondary"> None</Typography.Text>
+                ) : (
+                  <List
+                    size="small"
+                    dataSource={shift.orders}
+                    renderItem={(order) => (
+                      <List.Item>
+                        #{order.id} - {new Date(order.timestamp).toLocaleTimeString()}
+                      </List.Item>
+                    )}
+                    style={{ maxHeight: 60, overflowY: "auto" }}
+                  />
+                )}
+              </div>
+            </Card>
+          </Col>
+        ))
+      )}
+    </Row>
+  );
+
+  // Start shift card (second row)
+  const renderStartShift = () => (
+    <Row justify="center">
+      <Col xs={24} sm={18} md={12}>
         <Card>
           <Space direction="vertical" style={{ width: "100%" }}>
             <Typography.Title level={3}>Start a Shift</Typography.Title>
-            <Typography.Text>Shift Duration (seconds):</Typography.Text>
+            <Typography.Text>Shift Duration (minutes):</Typography.Text>
             <InputNumber
               min={1}
               value={Number(inputValue)}
@@ -167,14 +289,19 @@ const Shift: React.FC = () => {
             </Button>
           </Space>
         </Card>
-      )}
+      </Col>
+    </Row>
+  );
 
-      {status === ShiftStatus.Active && (
+  // Shift in progress
+  const renderActiveShift = () => (
+    <Row justify="center">
+      <Col xs={24} sm={18} md={12}>
         <Card>
           <Space direction="vertical" style={{ width: "100%" }}>
             <Typography.Title level={3}>Shift in Progress</Typography.Title>
             <Typography.Text strong>
-              Time Left: {timeLeft}s
+              Time Left: {formatTime(timeLeft)}
             </Typography.Text>
             <Button danger onClick={handleEndShift}>
               End Shift Early
@@ -196,9 +323,14 @@ const Shift: React.FC = () => {
             )}
           </Space>
         </Card>
-      )}
+      </Col>
+    </Row>
+  );
 
-      {status === ShiftStatus.Ended && (
+  // Shift ended
+  const renderEndedShift = () => (
+    <Row justify="center">
+      <Col xs={24} sm={18} md={12}>
         <Card>
           <Space direction="vertical" style={{ width: "100%" }}>
             <Typography.Title level={3}>Shift Ended</Typography.Title>
@@ -216,9 +348,25 @@ const Shift: React.FC = () => {
             <Button type="primary" onClick={handleReset}>
               Start New Shift
             </Button>
+            <Button style={{ marginTop: 8 }} onClick={handleReset}>
+              Return to Main
+            </Button>
           </Space>
         </Card>
+      </Col>
+    </Row>
+  );
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+      {status === ShiftStatus.NotStarted && (
+        <>
+          {renderShiftHistory()}
+          {renderStartShift()}
+        </>
       )}
+      {status === ShiftStatus.Active && renderActiveShift()}
+      {status === ShiftStatus.Ended && renderEndedShift()}
     </div>
   );
 };
