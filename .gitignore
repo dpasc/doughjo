@@ -1,0 +1,30 @@
+# Node.js dependencies
+/frontend/node_modules/
+
+# React build output
+/frontend/build/
+
+# Environment variables
+.env
+/backend/.env
+/frontend/.env.local
+
+# Python cache and virtual environments
+/backend/__pycache__/
+/backend/*.py[cod]
+/backend/venv/
+/backend/env/
+
+# Log files
+*.log
+logs/
+
+# IDE and editor configs
+.vscode/
+.idea/
+
+# macOS filesystem files
+.DS_Store
+
+# Docker override (if you create an override compose file locally)
+docker-compose.override.yml
