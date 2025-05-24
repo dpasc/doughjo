@@ -1,16 +1,17 @@
+import os
 from flask import Blueprint, jsonify, request
+from pymongo import MongoClient
 
 store_bp = Blueprint('store', __name__)
 
-# In-memory store for demo purposes
-products = [
-    {"name": "Product A", "price": 10.99, "seconds_for_order": 30},
-    {"name": "Product B", "price": 15.49, "seconds_for_order": 45},
-    {"name": "Product C", "price": 7.99, "seconds_for_order": 20}
-]
+# MongoDB connection
+mongo_uri = os.environ['MONGO_URI']
+client = MongoClient(mongo_uri)
+db = client.get_default_database()
 
 @store_bp.route('/store', methods=['GET'])
 def get_store():
+    products = list(db.products.find({}, {'_id': 0}))
     return jsonify(products), 200
 
 @store_bp.route('/store', methods=['POST'])
@@ -27,5 +28,5 @@ def add_product():
         }
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid data types"}), 400
-    products.append(new_product)
+    db.products.insert_one(new_product)
     return jsonify({"message": "Product added"}), 201

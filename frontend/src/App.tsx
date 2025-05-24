@@ -1,5 +1,5 @@
 import React from "react";
-import { Layout, Menu, Typography } from "antd";
+import { Layout, Menu } from "antd";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,8 +12,8 @@ import Stats from "./pages/Stats";
 import Store from "./pages/Store";
 import Settings from "./pages/Settings";
 
-const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Sider, Content } = Layout;
+
 
 const navItems = [
   {
