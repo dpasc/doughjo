@@ -7,10 +7,10 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import Shift from "./Shift";
-import Stats from "./Stats";
-import Store from "./Store";
-import Settings from "./Settings";
+import Shift from "./pages/Shift";
+import Stats from "./pages/Stats";
+import Store from "./pages/Store";
+import Settings from "./pages/Settings";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -19,7 +19,7 @@ const navItems = [
   {
     key: "/shift",
     label: "Shift",
-    icon: <span role="img" aria-label="Shift">🍳</span>,
+    icon: <span role="img" aria-label="Shift">🍩</span>,
   },
   {
     key: "/stats",
