@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { InputNumber, Button, List, Typography, Card, Space, Alert } from "antd";
 
 type Order = {
   id: number;
@@ -151,66 +152,72 @@ const Shift: React.FC = () => {
   return (
     <div style={{ maxWidth: 400, margin: "0 auto", padding: 24 }}>
       {status === ShiftStatus.NotStarted && (
-        <div>
-          <h2>Start a Shift</h2>
-          <label>
-            Shift Duration (seconds):{" "}
-            <input
-              type="number"
+        <Card>
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Typography.Title level={3}>Start a Shift</Typography.Title>
+            <Typography.Text>Shift Duration (seconds):</Typography.Text>
+            <InputNumber
               min={1}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              style={{ width: 80 }}
+              value={Number(inputValue)}
+              onChange={(value) => setInputValue(String(value))}
+              style={{ width: 120 }}
             />
-          </label>
-          <br />
-          <button onClick={handleStartShift} style={{ marginTop: 16 }}>
-            Start Shift
-          </button>
-        </div>
+            <Button type="primary" onClick={handleStartShift}>
+              Start Shift
+            </Button>
+          </Space>
+        </Card>
       )}
 
       {status === ShiftStatus.Active && (
-        <div>
-          <h2>Shift in Progress</h2>
-          <div>
-            <strong>Time Left:</strong> {timeLeft}s
-          </div>
-          <button onClick={handleEndShift} style={{ margin: "16px 0" }}>
-            End Shift Early
-          </button>
-          <div>
-            <h3>Orders</h3>
+        <Card>
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Typography.Title level={3}>Shift in Progress</Typography.Title>
+            <Typography.Text strong>
+              Time Left: {timeLeft}s
+            </Typography.Text>
+            <Button danger onClick={handleEndShift}>
+              End Shift Early
+            </Button>
+            <Typography.Title level={4}>Orders</Typography.Title>
             {orders.length === 0 ? (
-              <p>No orders yet.</p>
+              <Typography.Text>No orders yet.</Typography.Text>
             ) : (
-              <ul>
-                {orders.map((order) => (
-                  <li key={order.id}>
+              <List
+                bordered
+                dataSource={orders}
+                renderItem={(order) => (
+                  <List.Item>
                     Order #{order.id} - {new Date(order.timestamp).toLocaleTimeString()}
-                  </li>
-                ))}
-              </ul>
+                  </List.Item>
+                )}
+                style={{ maxHeight: 200, overflowY: "auto" }}
+              />
             )}
-          </div>
-        </div>
+          </Space>
+        </Card>
       )}
 
       {status === ShiftStatus.Ended && (
-        <div>
-          <h2>Shift Ended</h2>
-          <div>
-            <strong>Total Orders:</strong> {orders.length}
-          </div>
-          {saveResult && (
-            <div style={{ margin: "12px 0", color: saveResult.startsWith("Error") ? "red" : "green" }}>
-              {saveResult}
-            </div>
-          )}
-          <button onClick={handleReset} style={{ marginTop: 16 }}>
-            Start New Shift
-          </button>
-        </div>
+        <Card>
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Typography.Title level={3}>Shift Ended</Typography.Title>
+            <Typography.Text strong>
+              Total Orders: {orders.length}
+            </Typography.Text>
+            {saveResult && (
+              <Alert
+                message={saveResult}
+                type={saveResult.startsWith("Error") ? "error" : "success"}
+                showIcon
+                style={{ margin: "12px 0" }}
+              />
+            )}
+            <Button type="primary" onClick={handleReset}>
+              Start New Shift
+            </Button>
+          </Space>
+        </Card>
       )}
     </div>
   );
