@@ -22,14 +22,14 @@ const navItems = [
     icon: <span role="img" aria-label="Shift">🍩</span>,
   },
   {
-    key: "/stats",
-    label: "Stats",
-    icon: <span role="img" aria-label="Stats">📊</span>,
-  },
-  {
     key: "/store",
     label: "Store",
     icon: <span role="img" aria-label="Store">🛒</span>,
+  },
+  {
+    key: "/stats",
+    label: "Stats",
+    icon: <span role="img" aria-label="Stats">📊</span>,
   },
   {
     key: "/settings",
@@ -57,11 +57,6 @@ const AppLayout: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ background: "#001529", padding: "0 24px" }}>
-          <Title style={{ color: "#fff", margin: 0 }} level={2}>
-            Doughjo Dashboard
-          </Title>
-        </Header>
         <Content style={{ margin: "24px 16px 0", padding: 24, background: "#fff" }}>
           <Routes>
             <Route path="/shift" element={<Shift />} />
