@@ -12,10 +12,17 @@ import {
   Spin,
 } from "antd";
 
+type OrderItem = {
+  name: string;
+  seconds_for_order: number;
+  price: number;
+};
+
 type Order = {
   id: number;
   timestamp: number;
-  items: string[];
+  items: OrderItem[];
+  totalSeconds: number;
 };
 
 type ShiftHistory = {
@@ -48,9 +55,13 @@ const Shift: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const orderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Store items state
+  const [storeItems, setStoreItems] = useState<any[]>([]);
+  const [loadingStore, setLoadingStore] = useState<boolean>(false);
+
   // Completed orders state
   const [completedOrders, setCompletedOrders] = useState<
-    { id: number; created: number; completed: number; items: string[] }[]
+    { id: number; created: number; completed: number; items: OrderItem[] }[]
   >([]);
 
   // Shift history state
@@ -99,6 +110,23 @@ const Shift: React.FC = () => {
     setStatus(ShiftStatus.Ended);
   };
 
+  // Fetch store items when shift becomes active
+  useEffect(() => {
+    if (status !== ShiftStatus.Active) return;
+    setLoadingStore(true);
+    fetch("/store")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStoreItems(data);
+        } else {
+          setStoreItems([]);
+        }
+      })
+      .catch(() => setStoreItems([]))
+      .finally(() => setLoadingStore(false));
+  }, [status]);
+
   // Countdown timer effect
   useEffect(() => {
     if (status !== ShiftStatus.Active) return;
@@ -123,12 +151,26 @@ const Shift: React.FC = () => {
   useEffect(() => {
     if (status !== ShiftStatus.Active) return;
     const addOrder = () => {
+      // Randomly select 1-3 unique items from storeItems
+      if (storeItems.length === 0) return;
+      const numItems = getRandomDelay(1, Math.min(3, storeItems.length));
+      const shuffled = [...storeItems].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, numItems).map((item: any) => ({
+        name: item.name,
+        seconds_for_order: item.seconds_for_order,
+        price: item.price,
+      }));
+      const totalSeconds = selected.reduce(
+        (sum, item) => sum + (item.seconds_for_order || 0),
+        0
+      );
       setOrders((prev) => [
         ...prev,
         {
           id: orderId,
           timestamp: Date.now(),
-          items: ["Placeholder item"],
+          items: selected,
+          totalSeconds,
         },
       ]);
       setOrderId((id) => id + 1);
@@ -318,6 +360,66 @@ const Shift: React.FC = () => {
     </Row>
   );
 
+  // OrderCard component for per-order countdown
+  const OrderCard: React.FC<{
+    order: Order;
+    onComplete: (orderId: number) => void;
+  }> = ({ order, onComplete }) => {
+    const [countdown, setCountdown] = useState(order.totalSeconds);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      timerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    }, []);
+
+    return (
+      <Card size="small" title={`Order #${order.id}`} bordered>
+        <Typography.Text>
+          {new Date(order.timestamp).toLocaleTimeString()}
+        </Typography.Text>
+        <br />
+        <Typography.Text>
+          Items:
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {order.items.map((item, idx) => (
+              <li key={idx}>
+                {item.name} <span style={{ color: "#888" }}>({item.seconds_for_order}s)</span>
+              </li>
+            ))}
+          </ul>
+        </Typography.Text>
+        <Typography.Text>
+          <br />
+          Total Seconds: <b>{order.totalSeconds}</b>
+        </Typography.Text>
+        <br />
+        <Typography.Text>
+          Countdown: <b style={{ color: countdown === 0 ? "red" : undefined }}>{countdown}s</b>
+        </Typography.Text>
+        <br />
+        <Button
+          type="primary"
+          danger
+          style={{ marginTop: 8, width: "100%" }}
+          onClick={() => onComplete(order.id)}
+        >
+          Complete Order
+        </Button>
+      </Card>
+    );
+  };
+
   // Shift in progress
   const renderActiveShift = () => (
     <div style={{ width: "100%" }}>
@@ -329,28 +431,11 @@ const Shift: React.FC = () => {
             <Typography.Text>No orders yet.</Typography.Text>
           ) : (
             <Row gutter={[16, 16]}>
-{orders.map((order) => (
-  <Col key={order.id} xs={24} sm={12} md={6}>
-    <Card size="small" title={`Order #${order.id}`} bordered>
-      <Typography.Text>
-        {new Date(order.timestamp).toLocaleTimeString()}
-      </Typography.Text>
-      <br />
-      <Typography.Text>
-        Items: {order.items.join(", ")}
-      </Typography.Text>
-      <br />
-      <Button
-        type="primary"
-        danger
-        style={{ marginTop: 8, width: "100%" }}
-        onClick={() => handleCompleteOrder(order.id)}
-      >
-        Complete Order
-      </Button>
-    </Card>
-  </Col>
-))}
+              {orders.map((order) => (
+                <Col key={order.id} xs={24} sm={12} md={6}>
+                  <OrderCard order={order} onComplete={handleCompleteOrder} />
+                </Col>
+              ))}
             </Row>
           )}
         </Space>
@@ -404,6 +489,8 @@ const Shift: React.FC = () => {
                   <List.Item>
                     <span>
                       #{order.id} | Created: {new Date(order.created).toLocaleTimeString()} | Completed: {new Date(order.completed).toLocaleTimeString()} | Time Taken: {((order.completed - order.created) / 1000).toFixed(1)}s
+                      <br />
+                      Items: {order.items.map(item => item.name).join(", ")}
                     </span>
                   </List.Item>
                 )}
