@@ -48,6 +48,11 @@ const Shift: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const orderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Completed orders state
+  const [completedOrders, setCompletedOrders] = useState<
+    { id: number; created: number; completed: number; items: string[] }[]
+  >([]);
+
   // Shift history state
   const [shiftHistory, setShiftHistory] = useState<ShiftHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -84,6 +89,7 @@ const Shift: React.FC = () => {
     setStartTime(Date.now());
     setEndTime(null);
     setSaveResult(null);
+    setCompletedOrders([]);
     setStatus(ShiftStatus.Active);
   };
 
@@ -191,6 +197,25 @@ const Shift: React.FC = () => {
     setStartTime(null);
     setEndTime(null);
     setSaveResult(null);
+    setCompletedOrders([]);
+  };
+
+  // Complete order handler
+  const handleCompleteOrder = (orderId: number) => {
+    setOrders((prevOrders) => {
+      const orderToComplete = prevOrders.find((o) => o.id === orderId);
+      if (!orderToComplete) return prevOrders;
+      setCompletedOrders((prevCompleted) => [
+        ...prevCompleted,
+        {
+          id: orderToComplete.id,
+          created: orderToComplete.timestamp,
+          completed: Date.now(),
+          items: orderToComplete.items,
+        },
+      ]);
+      return prevOrders.filter((o) => o.id !== orderId);
+    });
   };
 
   // Format time as mm:ss
@@ -304,19 +329,28 @@ const Shift: React.FC = () => {
             <Typography.Text>No orders yet.</Typography.Text>
           ) : (
             <Row gutter={[16, 16]}>
-              {orders.map((order) => (
-                <Col key={order.id} xs={24} sm={12} md={6}>
-                  <Card size="small" title={`Order #${order.id}`} bordered>
-                    <Typography.Text>
-                      {new Date(order.timestamp).toLocaleTimeString()}
-                    </Typography.Text>
-                    <br />
-                    <Typography.Text>
-                      Items: {order.items.join(", ")}
-                    </Typography.Text>
-                  </Card>
-                </Col>
-              ))}
+{orders.map((order) => (
+  <Col key={order.id} xs={24} sm={12} md={6}>
+    <Card size="small" title={`Order #${order.id}`} bordered>
+      <Typography.Text>
+        {new Date(order.timestamp).toLocaleTimeString()}
+      </Typography.Text>
+      <br />
+      <Typography.Text>
+        Items: {order.items.join(", ")}
+      </Typography.Text>
+      <br />
+      <Button
+        type="primary"
+        danger
+        style={{ marginTop: 8, width: "100%" }}
+        onClick={() => handleCompleteOrder(order.id)}
+      >
+        Complete Order
+      </Button>
+    </Card>
+  </Col>
+))}
             </Row>
           )}
         </Space>
@@ -358,6 +392,24 @@ const Shift: React.FC = () => {
             <Typography.Text strong>
               Total Orders: {orders.length}
             </Typography.Text>
+            <Typography.Text strong>
+              Completed Orders: {completedOrders.length}
+            </Typography.Text>
+            {completedOrders.length > 0 && (
+              <List
+                size="small"
+                header={<div><b>Completed Orders</b></div>}
+                dataSource={completedOrders}
+                renderItem={(order) => (
+                  <List.Item>
+                    <span>
+                      #{order.id} | Created: {new Date(order.created).toLocaleTimeString()} | Completed: {new Date(order.completed).toLocaleTimeString()} | Time Taken: {((order.completed - order.created) / 1000).toFixed(1)}s
+                    </span>
+                  </List.Item>
+                )}
+                style={{ background: "#fafafa", borderRadius: 4, marginBottom: 8 }}
+              />
+            )}
             {startTime && (
               <Typography.Text>
                 <br />
