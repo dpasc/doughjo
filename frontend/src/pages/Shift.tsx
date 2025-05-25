@@ -360,37 +360,55 @@ const Shift: React.FC = () => {
     </Row>
   );
 
-  // OrderCard component for per-order countdown
+  // OrderCard component for per-order display
   const OrderCard: React.FC<{
     order: Order;
     onComplete: (orderId: number) => void;
   }> = ({ order, onComplete }) => {
-    const [countdown, setCountdown] = useState(order.totalSeconds);
+    const [secondsOnScreen, setSecondsOnScreen] = useState<number>(
+      Math.floor((Date.now() - order.timestamp) / 1000)
+    );
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Card color based on estimated seconds (for visual feedback, optional)
+    const getCardColor = (est: number) => {
+      if (est < 30) return "#ffa39e"; // red-3
+      if (est < 60) return "#ffe58f"; // gold-3 (orange)
+      return "#d9f7be"; // green-2
+    };
 
     useEffect(() => {
       timerRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            return 0;
-          }
-          return prev - 1;
-        });
+        setSecondsOnScreen(Math.floor((Date.now() - order.timestamp) / 1000));
       }, 1000);
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
-    }, []);
+    }, [order.timestamp]);
 
     return (
-      <Card size="small" title={`Order #${order.id}`} bordered>
-        <Typography.Text>
-          {new Date(order.timestamp).toLocaleTimeString()}
-        </Typography.Text>
-        <br />
-        <Typography.Text>
-          Items:
+      <Card
+        size="small"
+        title={`Order #${order.id}`}
+        bordered
+        style={{
+          background: getCardColor(order.totalSeconds),
+          width: "100%",
+          maxWidth: 320,
+          height: 300,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+        }}
+        bodyStyle={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          padding: 12,
+          paddingBottom: 0,
+        }}
+      >
+        <div style={{ flex: 1, minHeight: 90, overflowY: "auto" }}>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {order.items.map((item, idx) => (
               <li key={idx}>
@@ -398,71 +416,66 @@ const Shift: React.FC = () => {
               </li>
             ))}
           </ul>
-        </Typography.Text>
-        <Typography.Text>
+          <Typography.Text>
+            <br />
+            Estimated Seconds: <b>{order.totalSeconds}</b>
+          </Typography.Text>
           <br />
-          Total Seconds: <b>{order.totalSeconds}</b>
-        </Typography.Text>
-        <br />
-        <Typography.Text>
-          Countdown: <b style={{ color: countdown === 0 ? "red" : undefined }}>{countdown}s</b>
-        </Typography.Text>
-        <br />
-        <Button
-          type="primary"
-          danger
-          style={{ marginTop: 8, width: "100%" }}
-          onClick={() => onComplete(order.id)}
-        >
-          Complete Order
-        </Button>
+          <Typography.Text>
+            Order time: <b>{secondsOnScreen}</b>
+          </Typography.Text>
+        </div>
+        <div style={{ marginTop: "auto", paddingBottom: 16 }}>
+          <Button
+            type="primary"
+            danger
+            style={{ width: "100%" }}
+            onClick={() => onComplete(order.id)}
+          >
+            Complete Order
+          </Button>
+        </div>
       </Card>
     );
   };
 
   // Shift in progress
   const renderActiveShift = () => (
-    <div style={{ width: "100%" }}>
-      <Card style={{ width: "100%" }}>
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Typography.Title level={3}>Shift in Progress</Typography.Title>
-          <Typography.Title level={4}>Orders</Typography.Title>
-          {orders.length === 0 ? (
-            <Typography.Text>No orders yet.</Typography.Text>
-          ) : (
-            <Row gutter={[16, 16]}>
-              {orders.map((order) => (
-                <Col key={order.id} xs={24} sm={12} md={6}>
-                  <OrderCard order={order} onComplete={handleCompleteOrder} />
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Space>
-      </Card>
-      {/* Fixed controls at bottom right */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 24,
-          right: 24,
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 12,
-        }}
-      >
-        <Button
-          type="primary"
-          style={{ minWidth: 120, fontWeight: "bold" }}
-          disabled
-        >
-          Time Left: {formatTime(timeLeft)}
-        </Button>
-        <Button danger onClick={handleEndShift} style={{ minWidth: 120 }}>
-          End Shift
-        </Button>
+    <div style={{ width: "100%", overflowX: "hidden" }}>
+      <div style={{ width: "100%", marginBottom: 24 }}>
+        <Typography.Title level={3}>Shift in Progress</Typography.Title>
+        <Row align="middle" justify="space-between" style={{ width: "100%", marginBottom: 8 }}>
+          <Col>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              Orders
+            </Typography.Title>
+          </Col>
+          <Col>
+            <Space>
+              <Button
+                type="primary"
+                style={{ minWidth: 120, fontWeight: "bold" }}
+                disabled
+              >
+                Time Left: {formatTime(timeLeft)}
+              </Button>
+              <Button danger onClick={handleEndShift} style={{ minWidth: 120 }}>
+                End Shift
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+        {orders.length === 0 ? (
+          <Typography.Text>No orders yet.</Typography.Text>
+        ) : (
+          <Row gutter={[16, 16]}>
+            {orders.map((order) => (
+              <Col key={order.id} xs={24} sm={12} md={6}>
+                <OrderCard order={order} onComplete={handleCompleteOrder} />
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
     </div>
   );
