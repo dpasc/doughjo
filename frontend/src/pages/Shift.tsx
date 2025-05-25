@@ -295,36 +295,57 @@ const Shift: React.FC = () => {
 
   // Shift in progress
   const renderActiveShift = () => (
-    <Row justify="center">
-      <Col xs={24} sm={18} md={12}>
-        <Card>
-          <Space direction="vertical" style={{ width: "100%" }}>
-            <Typography.Title level={3}>Shift in Progress</Typography.Title>
-            <Typography.Text strong>
-              Time Left: {formatTime(timeLeft)}
-            </Typography.Text>
-            <Button danger onClick={handleEndShift}>
-              End Shift Early
-            </Button>
-            <Typography.Title level={4}>Orders</Typography.Title>
-            {orders.length === 0 ? (
-              <Typography.Text>No orders yet.</Typography.Text>
-            ) : (
-              <List
-                bordered
-                dataSource={orders}
-                renderItem={(order) => (
-                  <List.Item>
-                    Order #{order.id} - {new Date(order.timestamp).toLocaleTimeString()}
-                  </List.Item>
-                )}
-                style={{ maxHeight: 200, overflowY: "auto" }}
-              />
-            )}
-          </Space>
-        </Card>
-      </Col>
-    </Row>
+    <div style={{ width: "100%" }}>
+      <Card style={{ width: "100%" }}>
+        <Space direction="vertical" style={{ width: "100%" }}>
+          <Typography.Title level={3}>Shift in Progress</Typography.Title>
+          <Typography.Title level={4}>Orders</Typography.Title>
+          {orders.length === 0 ? (
+            <Typography.Text>No orders yet.</Typography.Text>
+          ) : (
+            <Row gutter={[16, 16]}>
+              {orders.map((order) => (
+                <Col key={order.id} xs={24} sm={12} md={6}>
+                  <Card size="small" title={`Order #${order.id}`} bordered>
+                    <Typography.Text>
+                      {new Date(order.timestamp).toLocaleTimeString()}
+                    </Typography.Text>
+                    <br />
+                    <Typography.Text>
+                      Items: {order.items.join(", ")}
+                    </Typography.Text>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Space>
+      </Card>
+      {/* Fixed controls at bottom right */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 12,
+        }}
+      >
+        <Button
+          type="primary"
+          style={{ minWidth: 120, fontWeight: "bold" }}
+          disabled
+        >
+          Time Left: {formatTime(timeLeft)}
+        </Button>
+        <Button danger onClick={handleEndShift} style={{ minWidth: 120 }}>
+          End Shift
+        </Button>
+      </div>
+    </div>
   );
 
   // Shift ended
@@ -370,7 +391,7 @@ const Shift: React.FC = () => {
   );
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
+    <div style={{ width: "100%", padding: 24 }}>
       {status === ShiftStatus.NotStarted && (
         <>
           {renderShiftHistory()}
