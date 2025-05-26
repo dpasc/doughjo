@@ -379,12 +379,19 @@ const Shift: React.FC = () => {
       };
     }, [order.timestamp]);
 
-    // Helper: get item color based on avgPrep - elapsed
-    const getItemColor = (avgPrep: number, elapsed: number) => {
+    // Card-level timer color logic
+    const getTimerColor = (elapsed: number) => {
+      if (elapsed < 300) return "#1DB954"; // green
+      if (elapsed < 600) return "#FF8C00"; // orange
+      return "#D40000"; // red
+    };
+
+    // Per-item row background color logic
+    const getItemBg = (avgPrep: number, elapsed: number) => {
       const remaining = avgPrep - elapsed;
       if (remaining <= 45) return "#D40000";
       if (remaining <= 90) return "#FF8C00";
-      return "#000";
+      return "#fff";
     };
 
     // Placeholder for modifiers (since not in backend)
@@ -393,27 +400,34 @@ const Shift: React.FC = () => {
       return []; // No modifiers in current data model
     };
 
+    // Format mm:ss for timer
+    const formatTimer = (seconds: number) => {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    };
+
     return (
       <div
         style={{
-          width: 340,
-          height: 480,
-          background: "#fff",
-          border: "4px solid #000",
-          borderRadius: 8,
+          width: 360,
+          height: 500,
+          background: "#FAFAFA",
+          border: "6px solid #001F54",
+          borderRadius: 0,
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
           overflow: "hidden",
-          padding: 12,
+          padding: 0,
           margin: "0 auto"
         }}
       >
         {/* Header Bar */}
         <div
           style={{
-            height: 65,
-            background: "#C8102E",
+            height: 60,
+            background: "#001F54",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -423,31 +437,34 @@ const Shift: React.FC = () => {
             style={{
               color: "#fff",
               fontWeight: "bold",
-              fontSize: 24,
+              fontSize: 34.7,
               letterSpacing: 1,
               textAlign: "center",
               width: "100%",
               userSelect: "none",
+              fontFamily: "inherit"
             }}
           >
             {`Order #${order.id}`}
           </span>
         </div>
-        {/* Elapsed Timer */}
+        {/* Card-level Timer */}
         <div
           style={{
-            height: 32,
+            height: 70,
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "0 16px",
+            justifyContent: "center",
             fontFamily: "monospace",
-            fontSize: 14,
-            color: "#bbb",
+            fontSize: 37.3,
+            color: getTimerColor(secondsOnScreen),
             borderBottom: "1px solid #eee",
+            fontWeight: 700,
+            letterSpacing: 1,
+            background: "transparent"
           }}
         >
-          {`+${secondsOnScreen}s`}
+          {formatTimer(secondsOnScreen)}
         </div>
         {/* Item List */}
         <div
@@ -464,25 +481,34 @@ const Shift: React.FC = () => {
             // Per-item timer logic
             const elapsed = secondsOnScreen;
             const avgPrep = item.seconds_for_order;
-            const color = getItemColor(avgPrep, elapsed);
+            const remaining = avgPrep - elapsed;
             // Placeholder: quantity always 1
             const quantity = 1;
             const modifiers = getModifiers(item);
 
             return (
-              <div key={idx} style={{ marginBottom: idx < order.items.length - 1 ? 12 : 0 }}>
-                <div
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: 16,
-                    color,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ marginRight: 8 }}>{quantity}×</span>
-                  <span>{item.name}</span>
-                </div>
+              <div
+                key={idx}
+                style={{
+                  marginBottom: idx < order.items.length - 1 ? 12 : 0,
+                  background: getItemBg(avgPrep, elapsed),
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  transition: "background 0.3s",
+                  display: "flex",
+                  alignItems: "center",
+                  minHeight: 32,
+                }}
+              >
+                <span style={{ fontWeight: "bold", fontSize: 21.3, marginRight: 8 }}>
+                  {quantity}×
+                </span>
+                <span style={{ fontSize: 21.3, color: "#111" }}>{item.name}</span>
+                {/* Optionally, show remaining time for debug:
+                <span style={{ marginLeft: "auto", fontSize: 14, color: "#888" }}>
+                  {remaining}s
+                </span>
+                */}
                 {modifiers.length > 0 && (
                   <div
                     style={{
