@@ -10,6 +10,7 @@ import {
   Row,
   Col,
   Spin,
+  Segmented,
 } from "antd";
 
 type OrderItem = {
@@ -63,6 +64,9 @@ const Shift: React.FC = () => {
   const [completedOrders, setCompletedOrders] = useState<
     { id: number; created: number; completed: number; items: OrderItem[] }[]
   >([]);
+
+  // Toggle state for order view
+  const [orderView, setOrderView] = useState<"current" | "completed">("current");
 
   // Shift history state
   const [shiftHistory, setShiftHistory] = useState<ShiftHistory[]>([]);
@@ -563,18 +567,93 @@ const Shift: React.FC = () => {
     );
   };
 
+  // Simple card for completed orders
+  const CompletedOrderCard: React.FC<{
+    order: { id: number; created: number; completed: number; items: OrderItem[] };
+  }> = ({ order }) => (
+    <div
+      style={{
+        width: 360,
+        minHeight: 220,
+        background: "#F5F5F5",
+        border: "3px solid #1DB954",
+        borderRadius: 0,
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        padding: 0,
+        margin: "0 auto"
+      }}
+    >
+      {/* Header Bar */}
+      <div
+        style={{
+          height: 48,
+          background: "#1DB954",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span
+          style={{
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: 28,
+            letterSpacing: 1,
+            textAlign: "center",
+            width: "100%",
+            userSelect: "none",
+            fontFamily: "inherit"
+          }}
+        >
+          {`Order #${order.id}`}
+        </span>
+      </div>
+      <div style={{ padding: "16px 16px 0 16px", flex: 1 }}>
+        <div style={{ fontWeight: 500, marginBottom: 6 }}>
+          Completed: {new Date(order.completed).toLocaleTimeString()}
+        </div>
+        <div style={{ fontWeight: 400, marginBottom: 6 }}>
+          Time Taken: {((order.completed - order.created) / 1000).toFixed(1)}s
+        </div>
+        <div>
+          <b>Items:</b>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {order.items.map((item, idx) => (
+              <li key={idx} style={{ fontSize: 17 }}>{item.name}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+
   // Shift in progress
   const renderActiveShift = () => (
     <div style={{ width: "100%", overflowX: "hidden" }}>
       <div style={{ width: "100%", marginBottom: 24 }}>
         <Typography.Title level={3}>Shift in Progress</Typography.Title>
-        <Row align="middle" justify="space-between" style={{ width: "100%", marginBottom: 8 }}>
-          <Col>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              Orders
-            </Typography.Title>
+        <Row align="middle" justify="center" style={{ width: "100%", marginBottom: 8 }}>
+          <Col flex="1 1 0" />
+          <Col flex="0 1 auto">
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Typography.Title level={4} style={{ margin: 0, textAlign: "center" }}>
+                Orders
+              </Typography.Title>
+              <Segmented
+                options={[
+                  { label: "Current Orders", value: "current" },
+                  { label: "Completed Orders", value: "completed" },
+                ]}
+                value={orderView}
+                onChange={val => setOrderView(val as "current" | "completed")}
+                style={{ marginTop: 4, marginBottom: 0, minWidth: 220, justifyContent: "center" }}
+              />
+            </div>
           </Col>
-          <Col>
+          <Col flex="1 1 0" style={{ display: "flex", justifyContent: "flex-end" }}>
             <Space>
               <Button
                 type="primary"
@@ -589,16 +668,30 @@ const Shift: React.FC = () => {
             </Space>
           </Col>
         </Row>
-        {orders.length === 0 ? (
-          <Typography.Text>No orders yet.</Typography.Text>
+        {orderView === "current" ? (
+          orders.length === 0 ? (
+            <Typography.Text>No orders yet.</Typography.Text>
+          ) : (
+            <Row gutter={[24, 24]}>
+              {orders.map((order) => (
+                <Col key={order.id} xs={24} sm={12} md={6}>
+                  <OrderCard order={order} onComplete={handleCompleteOrder} />
+                </Col>
+              ))}
+            </Row>
+          )
         ) : (
-          <Row gutter={[24, 24]}>
-            {orders.map((order) => (
-              <Col key={order.id} xs={24} sm={12} md={6}>
-                <OrderCard order={order} onComplete={handleCompleteOrder} />
-              </Col>
-            ))}
-          </Row>
+          completedOrders.length === 0 ? (
+            <Typography.Text>No completed orders yet.</Typography.Text>
+          ) : (
+            <Row gutter={[24, 24]}>
+              {completedOrders.map((order) => (
+                <Col key={order.id} xs={24} sm={12} md={6}>
+                  <CompletedOrderCard order={order} />
+                </Col>
+              ))}
+            </Row>
+          )
         )}
       </div>
     </div>
