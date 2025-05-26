@@ -360,7 +360,7 @@ const Shift: React.FC = () => {
     </Row>
   );
 
-  // OrderCard component for per-order display
+  // OrderCard component for per-order display (custom visuals)
   const OrderCard: React.FC<{
     order: Order;
     onComplete: (orderId: number) => void;
@@ -369,13 +369,6 @@ const Shift: React.FC = () => {
       Math.floor((Date.now() - order.timestamp) / 1000)
     );
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Card color based on estimated seconds (for visual feedback, optional)
-    const getCardColor = (est: number) => {
-      if (est < 30) return "#ffa39e"; // red-3
-      if (est < 60) return "#ffe58f"; // gold-3 (orange)
-      return "#d9f7be"; // green-2
-    };
 
     useEffect(() => {
       timerRef.current = setInterval(() => {
@@ -386,56 +379,161 @@ const Shift: React.FC = () => {
       };
     }, [order.timestamp]);
 
+    // Helper: get item color based on avgPrep - elapsed
+    const getItemColor = (avgPrep: number, elapsed: number) => {
+      const remaining = avgPrep - elapsed;
+      if (remaining <= 45) return "#D40000";
+      if (remaining <= 90) return "#FF8C00";
+      return "#000";
+    };
+
+    // Placeholder for modifiers (since not in backend)
+    const getModifiers = (item: any) => {
+      // Example: return item.modifiers || [];
+      return []; // No modifiers in current data model
+    };
+
     return (
-      <Card
-        size="small"
-        title={`Order #${order.id}`}
-        bordered
+      <div
         style={{
-          background: getCardColor(order.totalSeconds),
-          width: "100%",
-          maxWidth: 320,
-          height: 300,
+          width: 340,
+          height: 480,
+          background: "#fff",
+          border: "4px solid #000",
+          borderRadius: 8,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-start",
-        }}
-        bodyStyle={{
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
+          boxSizing: "border-box",
+          overflow: "hidden",
           padding: 12,
-          paddingBottom: 0,
+          margin: "0 auto"
         }}
       >
-        <div style={{ flex: 1, minHeight: 90, overflowY: "auto" }}>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {order.items.map((item, idx) => (
-              <li key={idx}>
-                {item.name} <span style={{ color: "#888" }}>({item.seconds_for_order}s)</span>
-              </li>
-            ))}
-          </ul>
-          <Typography.Text>
-            <br />
-            Estimated Seconds: <b>{order.totalSeconds}</b>
-          </Typography.Text>
-          <br />
-          <Typography.Text>
-            Order time: <b>{secondsOnScreen}</b>
-          </Typography.Text>
+        {/* Header Bar */}
+        <div
+          style={{
+            height: 65,
+            background: "#C8102E",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontWeight: "bold",
+              fontSize: 24,
+              letterSpacing: 1,
+              textAlign: "center",
+              width: "100%",
+              userSelect: "none",
+            }}
+          >
+            {`Order #${order.id}`}
+          </span>
         </div>
-        <div style={{ marginTop: "auto", paddingBottom: 16 }}>
+        {/* Elapsed Timer */}
+        <div
+          style={{
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            padding: "0 16px",
+            fontFamily: "monospace",
+            fontSize: 14,
+            color: "#bbb",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          {`+${secondsOnScreen}s`}
+        </div>
+        {/* Item List */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "16px 16px 0 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {order.items.map((item, idx) => {
+            // Per-item timer logic
+            const elapsed = secondsOnScreen;
+            const avgPrep = item.seconds_for_order;
+            const color = getItemColor(avgPrep, elapsed);
+            // Placeholder: quantity always 1
+            const quantity = 1;
+            const modifiers = getModifiers(item);
+
+            return (
+              <div key={idx} style={{ marginBottom: idx < order.items.length - 1 ? 12 : 0 }}>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: 16,
+                    color,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ marginRight: 8 }}>{quantity}×</span>
+                  <span>{item.name}</span>
+                </div>
+                {modifiers.length > 0 && (
+                  <div
+                    style={{
+                      fontStyle: "italic",
+                      color: "#D40000",
+                      fontSize: 14,
+                      marginLeft: 24,
+                      marginTop: 2,
+                    }}
+                  >
+                    {modifiers.join(", ")}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Drag Handle (down-chevron) */}
+        <div
+          style={{
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: "auto",
+            marginBottom: 8,
+            userSelect: "none",
+          }}
+        >
+          <svg width="24" height="16" viewBox="0 0 24 16" fill="none">
+            <path
+              d="M4 6l8 8 8-8"
+              stroke="#888"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        {/* Complete Order Button */}
+        <div style={{ padding: "0 16px 16px 16px" }}>
           <Button
             type="primary"
             danger
-            style={{ width: "100%" }}
+            style={{ width: "100%", fontWeight: "bold", fontSize: 16, marginTop: 0 }}
             onClick={() => onComplete(order.id)}
           >
             Complete Order
           </Button>
         </div>
-      </Card>
+      </div>
     );
   };
 
@@ -468,7 +566,7 @@ const Shift: React.FC = () => {
         {orders.length === 0 ? (
           <Typography.Text>No orders yet.</Typography.Text>
         ) : (
-          <Row gutter={[16, 16]}>
+          <Row gutter={[24, 24]}>
             {orders.map((order) => (
               <Col key={order.id} xs={24} sm={12} md={6}>
                 <OrderCard order={order} onComplete={handleCompleteOrder} />
