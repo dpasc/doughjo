@@ -248,20 +248,23 @@ const Shift: React.FC = () => {
 
   // Complete order handler
   const handleCompleteOrder = (orderId: number) => {
-    setOrders((prevOrders) => {
-      const orderToComplete = prevOrders.find((o) => o.id === orderId);
-      if (!orderToComplete) return prevOrders;
-      setCompletedOrders((prevCompleted) => [
-        ...prevCompleted,
-        {
-          id: orderToComplete.id,
-          created: orderToComplete.timestamp,
-          completed: Date.now(),
-          items: orderToComplete.items,
-        },
-      ]);
-      return prevOrders.filter((o) => o.id !== orderId);
-    });
+    // Prevent duplicate completion
+    if (completedOrders.some((o) => o.id === orderId)) return;
+    // Find the order to complete from the current orders state
+    const orderToComplete = orders.find((o) => o.id === orderId);
+    if (!orderToComplete) return;
+    // Add to completedOrders
+    setCompletedOrders((prevCompleted) => [
+      ...prevCompleted,
+      {
+        id: orderToComplete.id,
+        created: orderToComplete.timestamp,
+        completed: Date.now(),
+        items: orderToComplete.items,
+      },
+    ]);
+    // Remove from orders
+    setOrders((prevOrders) => prevOrders.filter((o) => o.id !== orderId));
   };
 
   // Format time as mm:ss
@@ -372,6 +375,7 @@ const Shift: React.FC = () => {
     const [secondsOnScreen, setSecondsOnScreen] = useState<number>(
       Math.floor((Date.now() - order.timestamp) / 1000)
     );
+    const [isCompleting, setIsCompleting] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -558,9 +562,13 @@ const Shift: React.FC = () => {
             type="primary"
             danger
             style={{ width: "100%", fontWeight: "bold", fontSize: 16, marginTop: 0 }}
-            onClick={() => onComplete(order.id)}
+            onClick={() => {
+              setIsCompleting(true);
+              onComplete(order.id);
+            }}
+            disabled={isCompleting}
           >
-            Complete Order
+            {isCompleting ? "Completing..." : "Complete Order"}
           </Button>
         </div>
       </div>
@@ -749,9 +757,6 @@ const Shift: React.FC = () => {
             )}
             <Button type="primary" onClick={handleReset}>
               Start New Shift
-            </Button>
-            <Button style={{ marginTop: 8 }} onClick={handleReset}>
-              Return to Main
             </Button>
           </Space>
         </Card>
